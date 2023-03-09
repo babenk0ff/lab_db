@@ -74,7 +74,7 @@ class Device(models.Model):
         self.__original_decimal_num_id = self.decimal_num.id if self.decimal_num else None
 
     type = models.ForeignKey(DeviceType, blank=True, null=True, on_delete=models.SET_NULL, verbose_name='Тип изделия')
-    index = models.CharField(max_length=10, unique=True, verbose_name='Индекс изделия')
+    index = models.CharField(max_length=64, unique=True, verbose_name='Индекс изделия')
     decimal_num = models.ForeignKey(DecimalNumber, blank=True, null=True, on_delete=models.SET_NULL,
                                     verbose_name='Децимальный номер')
     part_of = models.ManyToManyField('self', symmetrical=False, blank=True, verbose_name='В какое изделие входит')
