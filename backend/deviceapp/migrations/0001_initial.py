@@ -64,7 +64,7 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('index', models.CharField(max_length=10, unique=True, verbose_name='Индекс изделия')),
                 ('decimal_num', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='deviceapp.decimalnumber', verbose_name='Децимальный номер')),
-                ('part_of', models.ManyToManyField(blank=True, to='deviceapp.device', verbose_name='В какое изделие входит')),
+                ('part_of', models.ManyToManyField(blank=True, to='deviceapp.deviceapp', verbose_name='В какое изделие входит')),
                 ('theme', models.ManyToManyField(blank=True, to='deviceapp.theme', verbose_name='Тема')),
                 ('type', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='deviceapp.devicetype', verbose_name='Тип изделия')),
             ],

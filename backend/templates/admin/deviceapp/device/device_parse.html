@@ -1,0 +1,13 @@
+{% extends 'admin/deviceapp/parse_base.html' %}
+
+{% block title %}
+    Распознать строку
+{% endblock %}
+
+{% block content %}
+    <form method="post" action="{% url 'admin:device_parse' %}">
+        {% csrf_token %}
+        {{ form }}
+        <input type="submit" value="РАСПОЗНАТЬ">
+    </form>
+{% endblock %}

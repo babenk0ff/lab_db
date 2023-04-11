@@ -3,7 +3,9 @@ from django.core.validators import RegexValidator
 
 
 class Theme(models.Model):
-    name = models.CharField(max_length=128, unique=True, verbose_name='Название темы')
+    name = models.CharField(max_length=128,
+                            unique=True,
+                            verbose_name='Название темы')
 
     def __str__(self):
         return self.name
@@ -22,7 +24,7 @@ class OrgCode(models.Model):
             RegexValidator(
                 regex='^[а-яА-Я]{4}$',
                 message='Код должен состоять из четырех кириллических букв',
-                code='invalid_code'
+                code='invalid_code',
             )
         ])
 
@@ -35,7 +37,9 @@ class OrgCode(models.Model):
 
 
 class DecimalNumber(models.Model):
-    org_code = models.ForeignKey(OrgCode, on_delete=models.PROTECT, verbose_name='Код организации-разработчика')
+    org_code = models.ForeignKey(OrgCode,
+                                 on_delete=models.PROTECT,
+                                 verbose_name='Код организации-разработчика')
     number = models.CharField(
         max_length=13,
         verbose_name='Цифровая часть децимального номера',
@@ -58,7 +62,9 @@ class DecimalNumber(models.Model):
 
 
 class DeviceType(models.Model):
-    name = models.CharField(max_length=64, verbose_name='Наименование типа изделия')
+    name = models.CharField(max_length=64,
+                            verbose_name='Наименование типа изделия',
+                            help_text='Аппарат, Блок, Комплекс, Ячейка и т.п.')
 
     def __str__(self):
         return self.name
@@ -71,13 +77,26 @@ class DeviceType(models.Model):
 class Device(models.Model):
     def __init__(self, *args, **kwargs):
         super(Device, self).__init__(*args, **kwargs)
-        self.__original_decimal_num_id = self.decimal_num.id if self.decimal_num else None
+        self.__current_decimal_num_id = self.decimal_num.id if \
+            self.decimal_num else None
 
-    type = models.ForeignKey(DeviceType, blank=True, null=True, on_delete=models.SET_NULL, verbose_name='Тип изделия')
-    index = models.CharField(max_length=64, unique=True, verbose_name='Индекс изделия')
-    decimal_num = models.ForeignKey(DecimalNumber, blank=True, null=True, on_delete=models.SET_NULL,
+    type = models.ForeignKey(DeviceType,
+                             blank=True,
+                             null=True,
+                             on_delete=models.SET_NULL,
+                             verbose_name='Тип изделия')
+    index = models.CharField(max_length=64,
+                             unique=True,
+                             verbose_name='Индекс изделия')
+    decimal_num = models.ForeignKey(DecimalNumber,
+                                    blank=True,
+                                    null=True,
+                                    on_delete=models.SET_NULL,
                                     verbose_name='Децимальный номер')
-    part_of = models.ManyToManyField('self', symmetrical=False, blank=True, verbose_name='В какое изделие входит')
+    part_of = models.ManyToManyField('self',
+                                     symmetrical=False,
+                                     blank=True,
+                                     verbose_name='В какое изделие входит')
     theme = models.ManyToManyField(Theme, blank=True, verbose_name='Тема')
 
     def __str__(self):
@@ -85,7 +104,9 @@ class Device(models.Model):
         return string + f' {self.decimal_num}' if self.decimal_num else string
 
     def __make_unused(self):
-        orig_num_obj = DecimalNumber.objects.get(pk=self.__original_decimal_num_id)
+        orig_num_obj = DecimalNumber.objects.get(
+            pk=self.__current_decimal_num_id
+        )
         orig_num_obj.is_used = False
         orig_num_obj.save()
 
@@ -103,14 +124,18 @@ class Device(models.Model):
             self.__make_unused()
             self.__make_used()
 
-    def save(self, force_insert=False, force_update=False, using=None, update_fields=None, commit=True):
-        orig_num_id = self.__original_decimal_num_id
+    def save(self,
+             force_insert=False,
+             force_update=False,
+             using=None,
+             update_fields=None,
+             commit=True):
+
+        curr_num_id = self.__current_decimal_num_id
         new_num_obj = self.decimal_num
-        print(orig_num_id)
-        print(new_num_obj)
-        if orig_num_id is not None:
+        if curr_num_id is not None:
             if new_num_obj is not None:
-                if orig_num_id != new_num_obj.id:
+                if curr_num_id != new_num_obj.id:
                     self.__manage_use('update')
             else:
                 self.__manage_use('clean')
@@ -118,9 +143,11 @@ class Device(models.Model):
             if new_num_obj is not None:
                 self.__manage_use('set')
 
-        super(Device, self).save(force_insert, force_update, using, update_fields)
+        super(Device, self).save(force_insert,
+                                 force_update,
+                                 using,
+                                 update_fields)
 
     class Meta:
         verbose_name = 'Изделие'
         verbose_name_plural = 'Изделия'
-

@@ -1,0 +1,17 @@
+{% extends 'admin/deviceapp/parse_base.html' %}
+
+{% block title %}
+    Проверка данных
+{% endblock %}
+
+{% block content %}
+    <div style="padding: 20px">
+        <form method="post"
+              style="display: flex; flex-direction: column"
+              action="{% url 'admin:device_save_parsed_data' %}">
+            {% csrf_token %}
+            {{ form }}
+            <input type="submit" value="СОХРАНИТЬ">
+        </form>
+    </div>
+{% endblock %}
