@@ -1,17 +1,24 @@
-{% extends 'admin/deviceapp/parse_base.html' %}
-
-{% block title %}
-    Проверка данных
-{% endblock %}
-
-{% block content %}
-    <div style="padding: 20px">
-        <form method="post"
-              style="display: flex; flex-direction: column"
+<div class="parse-form_wrapper">
+    <div class="modal-header">
+        <h1>Распознанные данные</h1>
+    </div>
+    <div class="modal-body">
+        <form id="form-parse-save" method="post"
               action="{% url 'admin:device_save_parsed_data' %}">
             {% csrf_token %}
-            {{ form }}
-            <input type="submit" value="СОХРАНИТЬ">
+            <table class="parse-form">
+                {{ form }}
+            </table>
+            <div class="parse-submit_wrapper">
+                <input id="parse-reset"
+                       type="submit"
+                       class="parse-btn"
+                       value="ОТМЕНИТЬ">
+                <input type="submit"
+                       class="default parse-btn"
+                       value="СОХРАНИТЬ">
+            </div>
         </form>
     </div>
-{% endblock %}
+</div>
+

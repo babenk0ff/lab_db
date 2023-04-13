@@ -9,7 +9,7 @@ from django.db.models import Q
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 
-from django.urls import path
+from django.urls import path, reverse
 from django.template.response import TemplateResponse
 from django.shortcuts import HttpResponse, render, redirect, \
     HttpResponseRedirect
@@ -22,20 +22,35 @@ admin.site.register(DeviceType)
 
 
 class DeviceAdminDeviceParseForm(forms.Form):
+    template_name = 'parse_form_snippet.html'
+
     input = forms.CharField(
         label='Полное наименование изделия',
         max_length=100,
-        help_text='Наименование изделия АБВГ.123456.789',
+        help_text='Формат: Наименование изделия АБВГ.123456.789',
+        validators=[
+            RegexValidator(
+                regex=r'^([а-яА-я-\s]*)\s'
+                      r'([А-Я]{2}\d{3}'
+                      r'(?:-\d{1,2})?\s)?'
+                      r'([А-Я]{4}).([0-9]{6}.[0-9]{3}(?:-[0-9]{2})?)$',
+                message='Неверный формат строки',
+                code='invalid_code',
+            ),
+        ],
     )
 
 
 class DeviceAdminDeviceParsedDataForm(forms.Form):
+    template_name = 'parse_form_snippet.html'
+
     device_type = forms.CharField(
         label='Тип изделия',
         max_length=64,
     )
     device_index = forms.CharField(
-        label='Индекс изделия'
+        label='Индекс изделия',
+        required=False,
     )
     org_code = forms.CharField(
         label='Код организации-разработчика',
@@ -55,7 +70,7 @@ class DeviceAdminDeviceParsedDataForm(forms.Form):
             RegexValidator(
                 regex='^[0-9]{6}.[0-9]{3}(-[0-9]{2})?$',
                 message='Неверный формат номера'
-            )
+            ),
         ]
     )
 
@@ -112,6 +127,14 @@ class DeviceAdmin(ModelAdmin):
         ]
         return my_urls + urls
 
+    def changelist_view(self, request, extra_context=None):
+        extra_context = {
+            'url_parse': reverse('admin:device_parse'),
+            'url_parsed_save': reverse('admin:device_save_parsed_data'),
+            'form': DeviceAdminDeviceParseForm,
+        }
+        return super(DeviceAdmin, self).changelist_view(request, extra_context)
+
     def parse(self, request):
         if request.method == 'POST':
             form = DeviceAdminDeviceParseForm(request.POST)
@@ -144,12 +167,12 @@ class DeviceAdmin(ModelAdmin):
 
         context = {
             'form': form,
+            'url_parse': reverse('admin:device_parse')
         }
 
         return render(request,
                       'admin/deviceapp/device/device_parse.html',
-                      context
-                      )
+                      context)
 
     def save_parsed_data(self, request):
         if request.method == 'POST':
@@ -162,7 +185,6 @@ class DeviceAdmin(ModelAdmin):
                             name=data['device_type'])
                         org_code, _ = OrgCode.objects.get_or_create(
                             code=data['org_code'])
-                        print(org_code)
                         decimal_number = DecimalNumber.objects.create(
                             org_code=org_code,
                             number=data['decimal_number'],

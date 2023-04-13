@@ -1,13 +1,19 @@
-{% extends 'admin/deviceapp/parse_base.html' %}
-
-{% block title %}
-    Распознать строку
-{% endblock %}
-
-{% block content %}
-    <form method="post" action="{% url 'admin:device_parse' %}">
-        {% csrf_token %}
-        {{ form }}
-        <input type="submit" value="РАСПОЗНАТЬ">
-    </form>
-{% endblock %}
+<div class="parse-form_wrapper">
+    <div class="modal-header">
+        <h1>Распознать изделие из строки</h1>
+    </div>
+    <div class="modal-body">
+        <form id="form-parse" method="post" action="#">
+            {% csrf_token %}
+            <table class="parse-form">
+                {{ form }}
+            </table>
+            <div class="parse-submit_wrapper">
+                <input id="to-parse"
+                       type="submit"
+                       class="default parse-btn"
+                       value="РАСПОЗНАТЬ">
+            </div>
+        </form>
+    </div>
+</div>
