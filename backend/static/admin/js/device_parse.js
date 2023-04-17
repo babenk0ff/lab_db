@@ -36,25 +36,38 @@ window.addEventListener('load', async (event) => {
         if (event.target.id === 'form-parse') {
             const formData = new FormData(event.target);
             const formMarkup = await getParseFormMarkup(parseFormLink, formData);
-            replaceFormMarkup(formMarkup);
+            replaceForm(formMarkup);
         } else if (event.target.id === 'form-parse-save') {
             const formData = new FormData(event.target);
             const formMarkup = await getParseFormMarkup(saveFormLink, formData);
-            replaceFormMarkup(formMarkup);
+            replaceForm(formMarkup);
+
+            const redirect = document.getElementById('redirect_url');
+            if (redirect) {
+                const redirectUrl = JSON.parse(redirect.text);
+                window.location.replace(redirectUrl);
+            }
         }
     });
 
-    // Событие перезагрузки формы
+    // Событие очистки формы
     modalContent.addEventListener('click', async event => {
         if (event.target.id === 'parse-reset') {
             event.preventDefault();
             const formMarkup = await getParseFormMarkup(parseFormLink);
-            replaceFormMarkup(formMarkup);
+            replaceForm(formMarkup);
         }
     })
 });
 
-async function getParseFormMarkup(url, formData) {
+/**
+ * Отправляет на сервер данные из формы парсинга и получает в ответ
+ * HTML-разметку обновленной формы.
+ * @param url Эндпоинт для отправки данных формы
+ * @param formData Данные из формы
+ * @returns {Promise<string>} HTML-разметка обновленной формы
+ */
+async function getParseFormMarkup(url, formData = undefined) {
     if (formData) {
         const response = await fetch(url, {
             body: formData,
@@ -66,7 +79,11 @@ async function getParseFormMarkup(url, formData) {
     return await response.text();
 }
 
-function replaceFormMarkup(formMarkup) {
+/**
+ * Заменяет текущую форму на новую
+ * @param formMarkup HTML-раметка новой формы
+ */
+function replaceForm(formMarkup) {
     document.querySelector('.parse-form_wrapper').remove();
     document.querySelector('.modal-content')
         .insertAdjacentHTML("beforeend", formMarkup);

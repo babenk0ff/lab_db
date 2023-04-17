@@ -78,7 +78,8 @@ table.parse-form tr {
     padding: 5px 0;
 }
 
-table.parse-form tr:nth-child(even) {
+table.parse-form tr:nth-child(even),
+table.parse-form .errorlist {
     background: var(--body-bg);
 }
 

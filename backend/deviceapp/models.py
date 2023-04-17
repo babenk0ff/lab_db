@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction
 from django.core.validators import RegexValidator
 
 
@@ -41,6 +41,7 @@ class DecimalNumber(models.Model):
                                  on_delete=models.PROTECT,
                                  verbose_name='Код организации-разработчика')
     number = models.CharField(
+        unique=True,
         max_length=13,
         verbose_name='Цифровая часть децимального номера',
         help_text='Формат: 123456.789 или 123456.789-01',
@@ -63,6 +64,7 @@ class DecimalNumber(models.Model):
 
 class DeviceType(models.Model):
     name = models.CharField(max_length=64,
+                            unique=True,
                             verbose_name='Наименование типа изделия',
                             help_text='Аппарат, Блок, Комплекс, Ячейка и т.п.')
 
@@ -88,11 +90,11 @@ class Device(models.Model):
     index = models.CharField(max_length=64,
                              unique=True,
                              verbose_name='Индекс изделия')
-    decimal_num = models.ForeignKey(DecimalNumber,
-                                    blank=True,
-                                    null=True,
-                                    on_delete=models.SET_NULL,
-                                    verbose_name='Децимальный номер')
+    decimal_num = models.OneToOneField(DecimalNumber,
+                                       blank=True,
+                                       null=True,
+                                       on_delete=models.SET_NULL,
+                                       verbose_name='Децимальный номер')
     part_of = models.ManyToManyField('self',
                                      symmetrical=False,
                                      blank=True,
@@ -147,6 +149,14 @@ class Device(models.Model):
                                  force_update,
                                  using,
                                  update_fields)
+
+    def delete(self, using=None, keep_parents=False):
+        current_decimal_num = self.decimal_num
+
+        with transaction.atomic():
+            current_decimal_num.is_used = False
+            current_decimal_num.save()
+            super(Device, self).delete(using, keep_parents)
 
     class Meta:
         verbose_name = 'Изделие'
