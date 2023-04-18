@@ -1,0 +1,34 @@
+{% extends 'admin/base_site.html' %}
+{% load static %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'admin/css/action.css' %}">
+{% endblock %}
+
+{% block content %}
+    <div class="action-content">
+        <h1>Присвоение темы</h1>
+        <h2>Выберете тему для следующих изделий
+            (всего: {{ device_count }}шт.):</h2>
+        <form method="post">
+            {% csrf_token %}
+            <ul>
+                {% for device in devices %}
+                    <li>{{ device }}</li>
+                    <input type="hidden"
+                           name="_selected_action"
+                           value="{{ device.pk }}">
+                {% endfor %}
+            </ul>
+            {{ form.as_p }}
+            <input type="hidden" name="action" value="action_assign_theme">
+            <div class="btn-container">
+                <input type="submit" name="apply" value="ПРИСВОИТЬ"
+                       class="default">
+                <a href="#" class="button cancel-link">ВЕРНУТЬСЯ</a>
+            </div>
+        </form>
+        <script src="{% static 'admin/js/cancel.js' %}" async></script>
+    </div>
+{% endblock %}

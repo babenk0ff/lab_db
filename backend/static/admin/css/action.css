@@ -1,0 +1,27 @@
+.btn-container {
+    display: flex;
+}
+
+a.button {
+    padding: 10px 15px;
+}
+
+a.button:hover,
+a.button:focus {
+    text-decoration: none;
+}
+
+.btn-container .cancel-link, .default {
+    margin: 10px;
+}
+
+.btn-container .cancel-link {
+    margin: 10px;
+    background: var(--close-button-bg);
+}
+
+.btn-container .cancel-link:hover,
+.btn-container .cancel-link:focus {
+    margin: 10px;
+    background: #666666;
+}

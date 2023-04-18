@@ -1,8 +1,9 @@
 import re
 
 from django import forms
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.contrib.admin import ModelAdmin
+from django.contrib.admin.decorators import action
 from django.core.validators import RegexValidator
 from django.db import transaction, IntegrityError
 from django.db.models import Q
@@ -89,6 +90,13 @@ class DeviceAdminForm(forms.ModelForm):
             )
 
 
+class DeviceAdminAssignThemeActionForm(forms.Form):
+    themes = forms.ChoiceField(
+        label='Тема',
+        choices=[(theme.id, theme.name) for theme in Theme.objects.all()]
+    )
+
+
 @admin.register(Device)
 class DeviceAdmin(ModelAdmin):
     form = DeviceAdminForm
@@ -96,11 +104,23 @@ class DeviceAdmin(ModelAdmin):
     list_filter = ('type', 'theme')
     filter_horizontal = ('part_of', 'theme')
     change_list_template = 'admin/deviceapp/device/change_list.html'
+    actions = ('action_assign_theme',)
 
     def get_themes(self, obj):
-        return mark_safe(
-            '<br>'.join([theme.name for theme in obj.theme.all()])
-        )
+        themes = []
+        for theme in obj.theme.all():
+            a_tag = mark_safe('<a href="{}">{}</a>'.format(
+                reverse('admin:deviceapp_theme_change', args=(theme.id,)),
+                theme.name
+            ))
+            themes.append(
+                '''
+                <span class="{}"
+                      style="display: block; margin-bottom: 4px;">{}
+                </span>
+                '''.format('thm-elem', a_tag)
+            )
+        return mark_safe(''.join(themes))
 
     get_themes.short_description = 'Темы'
 
@@ -122,7 +142,7 @@ class DeviceAdmin(ModelAdmin):
                  name='device_parse'),
             path('save_parsed_data/',
                  self.admin_site.admin_view(self.save_parsed_data),
-                 name='device_save_parsed_data')
+                 name='device_save_parsed_data'),
         ]
         return my_urls + urls
 
@@ -232,6 +252,40 @@ class DeviceAdmin(ModelAdmin):
     def delete_queryset(self, request, queryset):
         for each in queryset:
             each.delete()
+
+    @action(description='Присвоить тему')
+    def action_assign_theme(self, request, queryset):
+        form = DeviceAdminAssignThemeActionForm()
+        device_count = queryset.count()
+        if 'apply' in request.POST:
+            with transaction.atomic():
+                try:
+                    theme = Theme.objects.get(pk=request.POST['themes'])
+                    for device in queryset:
+                        device.theme.add(theme)
+                except IntegrityError:
+                    self.message_user(
+                        request,
+                        'Не удалось присвоить тему "{}"'.format(theme.name),
+                        messages.ERROR
+                    )
+                else:
+                    self.message_user(
+                        request,
+                        'Тема "{}" успешно присвоена изделиям '
+                        'в количестве {} шт'.format(theme.name, device_count),
+                        messages.SUCCESS
+                    )
+                return None
+
+        context = {
+            'form': form,
+            'devices': queryset,
+            'device_count': device_count,
+        }
+        return render(request,
+                      'admin/deviceapp/device/assign_theme.html',
+                      context)
 
 
 @admin.register(DecimalNumber)
