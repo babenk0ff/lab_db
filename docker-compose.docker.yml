@@ -18,8 +18,29 @@ services:
     expose:
       - 8000
     env_file:
-      - ./.env.win
+      - ./.env.local.docker
     restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:13.1-alpine
+    logging:
+        driver: "json-file"
+        options:
+            max-file: 5
+            max-size: 10m
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - ./.env.local.docker.db
+    restart: unless-stopped
+    healthcheck:
+      test: pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   nginx:
     build: ./nginx
@@ -37,4 +58,5 @@ services:
       - backend
 
 volumes:
+  postgres_data: null
   static_volume: null

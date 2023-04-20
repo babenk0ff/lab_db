@@ -14,9 +14,12 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv(dotenv_path='../.env')
-
 ENV = os.getenv('ENV', None)
+
+ENV_FILE = '../.env.local'
+
+if ENV == 'local' or os.path.exists(ENV_FILE):
+    load_dotenv(ENV_FILE)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -30,10 +33,13 @@ SECRET_KEY = os.getenv('DJANGO_SECRET')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True if os.getenv('DEBUG') == 'True' else False
 
-ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS').split(',')
+ALLOWED_HOSTS = ['*'] if DEBUG else os.getenv('DJANGO_ALLOWED_HOSTS').split(',')
+
+CSRF_TRUST_ORIGINS = [
+    '127.0.0.1',
+]
 
 # Application definition
-
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -94,12 +100,12 @@ if ENV == 'local':
 else:
     DATABASES = {
         'default': {
-            'ENGINE': os.environ.get('SQL_ENGINE', 'django.db.backends.sqlite3'),
-            'NAME': os.environ.get('SQL_DATABASE', BASE_DIR / 'db.sqlite3'),
-            'USER': os.environ.get('SQL_USER', 'user'),
-            'PASSWORD': os.environ.get('SQL_PASSWORD', 'password'),
-            'HOST': os.environ.get('SQL_HOST', 'localhost'),
-            'PORT': os.environ.get('SQL_PORT', '5432'),
+            'ENGINE': os.environ.get('SQL_ENGINE'),
+            'NAME': os.environ.get('SQL_DATABASE'),
+            'USER': os.environ.get('SQL_USER'),
+            'PASSWORD': os.environ.get('SQL_PASSWORD'),
+            'HOST': os.environ.get('SQL_HOST'),
+            'PORT': os.environ.get('SQL_PORT'),
         }
     }
 
@@ -137,20 +143,19 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
-STATICFILES_DIRS = [
-    BASE_DIR / 'static',
-]
-
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+if ENV == 'local':
+    STATICFILES_DIRS = [
+        BASE_DIR / 'static',
+    ]
+else:
+    STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CSRF_TRUST_ORIGINS = [
-    '127.0.0.1',
-]
+# Rest Framework
 
 if not DEBUG:
     REST_FRAMEWORK = {
@@ -159,10 +164,12 @@ if not DEBUG:
         ]
     }
 
-
 # Logging
 
-LOG_FILE = BASE_DIR / "var" / "log" / "main_log.log"
+LOG_PATH = BASE_DIR / "var" / "log"
+if not os.path.exists(BASE_DIR / "var" / "log"):
+    os.makedirs(LOG_PATH)
+LOG_FILE = LOG_PATH / "main.log"
 
 LOGGING = {
     'version': 1,
@@ -172,22 +179,42 @@ LOGGING = {
             'format': '[%(asctime)s] %(levelname)s %(name)s (%(lineno)d)%(message)s'
         },
     },
+    'filters': {
+        'require_debug_true': {'()': 'django.utils.log.RequireDebugTrue'}
+    },
     'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'console'
+        },
         'file': {
             'level': 'INFO',
             'class': 'logging.FileHandler',
             'filename': LOG_FILE,
             'formatter': 'console'
         },
-        'console': {
+        'console_debug': {
+            'level': 'DEBUG',
             'class': 'logging.StreamHandler',
-            'formatter': 'console'
+            'formatter': 'console',
+            'filters': ['require_debug_true'],
+        },
+        'file_debug': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': 'debug.log',
+            'formatter': 'console',
+            'filters': ['require_debug_true'],
         },
     },
     'loggers': {
         'django': {
             'level': 'INFO',
             'handlers': ['file', 'console']
+        },
+        'debug': {
+            'level': 'DEBUG',
+            'handlers': ['file_debug', 'console_debug']
         },
     },
 }

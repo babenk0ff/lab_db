@@ -17,7 +17,7 @@
 3. Build and run containers:
 
    ```bash
-   docker compose -f docker-compose.prod.yml up -d --build
+   docker compose -f docker-compose.docker.yml up -d --build
    ```
 4. Run migrations:
 
