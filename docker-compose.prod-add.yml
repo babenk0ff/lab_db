@@ -5,8 +5,8 @@ services:
 
   backend:
     build:
-        context: ./backend
-        dockerfile: Dockerfile.prod
+        context: .
+        dockerfile: Dockerfile.prod-add
     logging:
         driver: "json-file"
         options:

@@ -33,7 +33,8 @@ SECRET_KEY = os.getenv('DJANGO_SECRET')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True if os.getenv('DEBUG') == 'True' else False
 
-ALLOWED_HOSTS = ['*'] if DEBUG else os.getenv('DJANGO_ALLOWED_HOSTS').split(',')
+ALLOWED_HOSTS = ['*'] if DEBUG else os.getenv('DJANGO_ALLOWED_HOSTS').split(
+    ',')
 
 CSRF_TRUST_ORIGINS = [
     '127.0.0.1',
@@ -169,52 +170,97 @@ if not DEBUG:
 LOG_PATH = BASE_DIR / "var" / "log"
 if not os.path.exists(BASE_DIR / "var" / "log"):
     os.makedirs(LOG_PATH)
-LOG_FILE = LOG_PATH / "main.log"
+ERROR_LOG_FILE = LOG_PATH / "main.log"
+
+# LOGGING = {
+#     'version': 1,
+#     'disable_existing_logers': False,
+#     'formatters': {
+#         'console': {
+#             'format': '[%(asctime)s] %(levelname)s %(name)s (%(lineno)d)%(message)s'
+#         },
+#     },
+#     'filters': {
+#         'require_debug_true': {'()': 'django.utils.log.RequireDebugTrue'}
+#     },
+#     'handlers': {
+#         'console': {
+#             'class': 'logging.StreamHandler',
+#             'formatter': 'console'
+#         },
+#         'file': {
+#             'level': 'INFO',
+#             'class': 'logging.FileHandler',
+#             'filename': LOG_FILE,
+#             'formatter': 'console'
+#         },
+#         'console_debug': {
+#             'level': 'DEBUG',
+#             'class': 'logging.StreamHandler',
+#             'formatter': 'console',
+#             'filters': ['require_debug_true'],
+#         },
+#         'file_debug': {
+#             'level': 'DEBUG',
+#             'class': 'logging.FileHandler',
+#             'filename': 'debug.log',
+#             'formatter': 'console',
+#             'filters': ['require_debug_true'],
+#         },
+#     },
+#     'loggers': {
+#         'django': {
+#             'level': 'INFO',
+#             'handlers': ['file', 'console']
+#         },
+#         'debug': {
+#             'level': 'DEBUG',
+#             'handlers': ['file_debug', 'console_debug']
+#         },
+#     },
+# }
 
 LOGGING = {
     'version': 1,
     'disable_existing_logers': False,
     'formatters': {
-        'console': {
-            'format': '[%(asctime)s] %(levelname)s %(name)s (%(lineno)d)%(message)s'
+        'default': {
+            'format': '%(asctime)s:%(name)s:%(process)d:%(lineno)d '
+                      '%(levelname)s %(message)s',
+            'datefmt': '%Y-%m-%d %H:%M:%S'
         },
-    },
-    'filters': {
-        'require_debug_true': {'()': 'django.utils.log.RequireDebugTrue'}
+        'simple': {
+            'format': '%(message)s',
+        },
     },
     'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'console'
+        'logfile': {
+            'formatter': 'default',
+            'level': 'ERROR',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': ERROR_LOG_FILE,
+            'backupCount': 2,
+
         },
-        'file': {
-            'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': LOG_FILE,
-            'formatter': 'console'
-        },
-        'console_debug': {
+        'verbose_output': {
+            'formatter': 'simple',
             'level': 'DEBUG',
             'class': 'logging.StreamHandler',
-            'formatter': 'console',
-            'filters': ['require_debug_true'],
-        },
-        'file_debug': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'filename': 'debug.log',
-            'formatter': 'console',
-            'filters': ['require_debug_true'],
+            'stream': 'ext://sys.stdout',
         },
     },
     'loggers': {
         'django': {
             'level': 'INFO',
-            'handlers': ['file', 'console']
-        },
-        'debug': {
-            'level': 'DEBUG',
-            'handlers': ['file_debug', 'console_debug']
+            'handlers': [
+                'verbose_output',
+            ],
         },
     },
+    'root': {
+        'level': 'INFO',
+        'handlers': [
+            'logfile',
+        ]
+    }
 }

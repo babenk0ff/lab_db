@@ -1,7 +1,6 @@
-FROM python:3.9.6-alpine
+FROM lab_db-backend:latest
 
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+USER root
 
 RUN mkdir -p /home/app
 RUN addgroup -S app && adduser -S app -G app
