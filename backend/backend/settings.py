@@ -172,54 +172,6 @@ if not os.path.exists(BASE_DIR / "var" / "log"):
     os.makedirs(LOG_PATH)
 ERROR_LOG_FILE = LOG_PATH / "main.log"
 
-# LOGGING = {
-#     'version': 1,
-#     'disable_existing_logers': False,
-#     'formatters': {
-#         'console': {
-#             'format': '[%(asctime)s] %(levelname)s %(name)s (%(lineno)d)%(message)s'
-#         },
-#     },
-#     'filters': {
-#         'require_debug_true': {'()': 'django.utils.log.RequireDebugTrue'}
-#     },
-#     'handlers': {
-#         'console': {
-#             'class': 'logging.StreamHandler',
-#             'formatter': 'console'
-#         },
-#         'file': {
-#             'level': 'INFO',
-#             'class': 'logging.FileHandler',
-#             'filename': LOG_FILE,
-#             'formatter': 'console'
-#         },
-#         'console_debug': {
-#             'level': 'DEBUG',
-#             'class': 'logging.StreamHandler',
-#             'formatter': 'console',
-#             'filters': ['require_debug_true'],
-#         },
-#         'file_debug': {
-#             'level': 'DEBUG',
-#             'class': 'logging.FileHandler',
-#             'filename': 'debug.log',
-#             'formatter': 'console',
-#             'filters': ['require_debug_true'],
-#         },
-#     },
-#     'loggers': {
-#         'django': {
-#             'level': 'INFO',
-#             'handlers': ['file', 'console']
-#         },
-#         'debug': {
-#             'level': 'DEBUG',
-#             'handlers': ['file_debug', 'console_debug']
-#         },
-#     },
-# }
-
 LOGGING = {
     'version': 1,
     'disable_existing_logers': False,
