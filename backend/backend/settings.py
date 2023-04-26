@@ -52,6 +52,7 @@ INSTALLED_APPS = [
 
     # other
     'rest_framework',
+    'djecrety',
 
     # my
     'deviceapp',

@@ -104,7 +104,7 @@ class Device(models.Model):
     theme = models.ManyToManyField(Theme, blank=True, verbose_name='Тема')
 
     def __str__(self):
-        string = f'{self.type} {self.index}'
+        string = f'{self.type} {self.index}' if self.index else str(self.type)
         return string + f' {self.decimal_num}' if self.decimal_num else string
 
     def __make_unused(self):

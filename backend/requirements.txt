@@ -2,6 +2,7 @@ asgiref==3.6.0
 backports.zoneinfo==0.2.1
 Django==4.1.7
 djangorestframework==3.14.0
+djecrety==1.0.15
 gunicorn==20.1.0
 psycopg2-binary==2.9.5
 python-dotenv==1.0.0

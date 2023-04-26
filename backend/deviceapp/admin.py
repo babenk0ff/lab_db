@@ -13,7 +13,7 @@ from django.utils.safestring import mark_safe
 from django.urls import path, reverse
 from django.shortcuts import render
 
-from deviceapp.models import Device, OrgCode, DecimalNumber, Theme, DeviceType
+from .models import Device, OrgCode, DecimalNumber, Theme, DeviceType
 
 admin.site.register(OrgCode)
 admin.site.register(Theme)
@@ -29,8 +29,8 @@ class DeviceAdminDeviceParseForm(forms.Form):
         help_text='Формат: Наименование изделия АБВГ.123456.789',
         validators=[
             RegexValidator(
-                regex=r'^([а-яА-я-\s]*)\s?'
-                      r'([А-Я]{2}\d{3}[-\\d\w]*(?:-\d{1,2})?)?\s?'
+                regex=r'^([а-яА-я-\s]*[а-яА-я])\s*'
+                      r'((?:[А-Я]{2}\d{3}|[А-Я]-\d{3})(?:-\d{1,2})?)?\s?'
                       r'([А-Я]{4}).([0-9]{6}.[0-9]{3}(?:-[0-9]{2})?)$',
                 message='Неверный формат строки',
                 code='invalid_code',
@@ -171,8 +171,8 @@ class DeviceAdmin(ModelAdmin):
                     string=form.cleaned_data['input']
                 )
                 pattern = re.compile(
-                    r'^([а-яА-я-\s]*)\s?'
-                    r'([А-Я]{2}\d{3}[-\\d\w]*(?:-\d{1,2})?)?\s?'
+                    r'^([а-яА-я-\s]*[а-яА-я])\s*'
+                    r'((?:[А-Я]{2}\d{3}|[А-Я]-\d{3})(?:-\d{1,2})?)?\s?'
                     r'([А-Я]{4}).([0-9]{6}.[0-9]{3}(?:-[0-9]{2})?)$'
                 )
                 parsed_data = re.findall(pattern, prepared_string)
