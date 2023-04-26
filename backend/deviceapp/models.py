@@ -65,6 +65,8 @@ class DecimalNumber(models.Model):
 class DeviceType(models.Model):
     name = models.CharField(max_length=64,
                             unique=True,
+                            null=True,
+                            blank=True,
                             verbose_name='Наименование типа изделия',
                             help_text='Аппарат, Блок, Комплекс, Ячейка и т.п.')
 
@@ -83,12 +85,12 @@ class Device(models.Model):
             self.decimal_num else None
 
     type = models.ForeignKey(DeviceType,
-                             blank=True,
-                             null=True,
-                             on_delete=models.SET_NULL,
+                             on_delete=models.PROTECT,
                              verbose_name='Тип изделия')
     index = models.CharField(max_length=64,
-                             unique=True,
+                             # unique=True,
+                             blank=True,
+                             null=True,
                              verbose_name='Индекс изделия')
     decimal_num = models.OneToOneField(DecimalNumber,
                                        blank=True,

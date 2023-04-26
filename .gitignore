@@ -1,13 +1,13 @@
 *.pyc
 __pycache
 venv
-.env
 .env.docker
 .env.docker.db
 .env.docker.dev
 .env.prod
-.env.local
+.env
 db.sqlite3
 .idea
 backend/debug.log
 backend/var/log
+backend/staticfiles

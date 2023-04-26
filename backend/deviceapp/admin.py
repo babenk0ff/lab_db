@@ -3,7 +3,7 @@ import re
 from django import forms
 from django.contrib import admin, messages
 from django.contrib.admin import ModelAdmin
-from django.contrib.admin.decorators import action
+from django.contrib.admin.decorators import action, display
 from django.core.validators import RegexValidator
 from django.db import transaction, IntegrityError
 from django.db.models import Q
@@ -29,8 +29,8 @@ class DeviceAdminDeviceParseForm(forms.Form):
         help_text='Формат: Наименование изделия АБВГ.123456.789',
         validators=[
             RegexValidator(
-                regex=r'^([а-яА-я-\s]*)\s*'
-                      r'([А-Я]{2}\d{3}(?:-\d{1,2})?)?\s*'
+                regex=r'^([а-яА-я-\s]*)\s?'
+                      r'([А-Я]{2}\d{3}[-\\d\w]*(?:-\d{1,2})?)?\s?'
                       r'([А-Я]{4}).([0-9]{6}.[0-9]{3}(?:-[0-9]{2})?)$',
                 message='Неверный формат строки',
                 code='invalid_code',
@@ -91,21 +91,25 @@ class DeviceAdminForm(forms.ModelForm):
 
 
 class DeviceAdminAssignThemeActionForm(forms.Form):
-    themes = forms.ChoiceField(
-        label='Тема',
-        choices=[(theme.id, theme.name) for theme in Theme.objects.all()]
-    )
+    themes = forms.ChoiceField(label='Тема')
+
+    def __init__(self, *args, **kwargs):
+        super(DeviceAdminAssignThemeActionForm, self).__init__(*args, **kwargs)
+        self.fields['themes'].choices = [
+            (theme.id, theme.name) for theme in Theme.objects.all()
+        ]
 
 
 @admin.register(Device)
 class DeviceAdmin(ModelAdmin):
     form = DeviceAdminForm
-    list_display = ('__str__', 'get_themes')
+    list_display = ('__str__', 'is_part_of', 'get_themes')
     list_filter = ('type', 'theme')
     filter_horizontal = ('part_of', 'theme')
     change_list_template = 'admin/deviceapp/device/change_list.html'
     actions = ('action_assign_theme',)
 
+    @display(description='Темы')
     def get_themes(self, obj):
         themes = []
         for theme in obj.theme.all():
@@ -122,7 +126,11 @@ class DeviceAdmin(ModelAdmin):
             )
         return mark_safe(''.join(themes))
 
-    get_themes.short_description = 'Темы'
+    @display(description='Входимость', boolean=True)
+    def is_part_of(self, obj):
+        if obj.part_of.count() > 0:
+            return True
+        return False
 
     def get_form(self, request, obj=None, change=False, **kwargs):
         if obj is not None:
@@ -163,8 +171,8 @@ class DeviceAdmin(ModelAdmin):
                     string=form.cleaned_data['input']
                 )
                 pattern = re.compile(
-                    r'^([а-яА-я-\s]*)\s'
-                    r'([А-Я]{2}\d{3}(?:-\d{1,2})?)?\s?'
+                    r'^([а-яА-я-\s]*)\s?'
+                    r'([А-Я]{2}\d{3}[-\\d\w]*(?:-\d{1,2})?)?\s?'
                     r'([А-Я]{4}).([0-9]{6}.[0-9]{3}(?:-[0-9]{2})?)$'
                 )
                 parsed_data = re.findall(pattern, prepared_string)
@@ -213,7 +221,7 @@ class DeviceAdmin(ModelAdmin):
                             decimal_num=decimal_number,
                         )
 
-                except IntegrityError as e:
+                except (IntegrityError, ValueError) as e:
                     form.add_error(None, 'Ошибка при сохранении')
                     model_attr = e.args[0].split('.')[1].replace('_id', '')
                     if model_attr == 'index':

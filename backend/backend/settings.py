@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 
 ENV = os.getenv('ENV', None)
 
-ENV_FILE = '../.env.local'
+ENV_FILE = '../.env'
 
 if ENV == 'local' or os.path.exists(ENV_FILE):
     load_dotenv(ENV_FILE)
@@ -144,12 +144,11 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
-if ENV == 'local':
-    STATICFILES_DIRS = [
-        BASE_DIR / 'static',
-    ]
-else:
-    STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+]
+
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
@@ -198,7 +197,7 @@ LOGGING = {
             'formatter': 'simple',
             'level': 'DEBUG',
             'class': 'logging.StreamHandler',
-            'stream': 'ext://sys.stdout',
+            # 'stream': 'ext://sys.stdout',
         },
     },
     'loggers': {
