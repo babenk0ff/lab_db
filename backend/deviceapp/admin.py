@@ -22,6 +22,11 @@ admin.site.register(DeviceType)
 
 class DeviceAdminDeviceParseForm(forms.Form):
     template_name = 'parse_form_snippet.html'
+    parse_regex = re.compile(
+        r'^([а-яА-я-\s]*[а-яА-я])\s*'
+        r'((?:[А-Я]{2}\d{3}|[А-Я]-\d{3})(?:-\d{1,2})?)?\s?'
+        r'([А-Я]{4}).([0-9]{6}.[0-9]{3}(?:-[0-9]{2})?)$'
+    )
 
     input = forms.CharField(
         label='Полное наименование изделия',
@@ -29,9 +34,7 @@ class DeviceAdminDeviceParseForm(forms.Form):
         help_text='Формат: Наименование изделия АБВГ.123456.789',
         validators=[
             RegexValidator(
-                regex=r'^([а-яА-я-\s]*)\s?'
-                      r'([А-Я]{2}\d{3}[-\\d\w]*(?:-\d{1,2})?)?\s?'
-                      r'([А-Я]{4}).([0-9]{6}.[0-9]{3}(?:-[0-9]{2})?)$',
+                regex=parse_regex,
                 message='Неверный формат строки',
                 code='invalid_code',
             ),
@@ -54,6 +57,7 @@ class DeviceAdminDeviceParsedDataForm(forms.Form):
         label='Код организации-разработчика',
         max_length=4,
         help_text='Формат: АБВГ',
+        required=True,
         validators=[
             RegexValidator(
                 regex='^[а-яА-Я]{4}$',
@@ -68,7 +72,7 @@ class DeviceAdminDeviceParsedDataForm(forms.Form):
         help_text='Формат: 123456.789 или 123456.789-01',
         validators=[
             RegexValidator(
-                regex='^[0-9]{6}.[0-9]{3}(-[0-9]{2})?$',
+                regex=r'^[0-9]{6}\.[0-9]{3}(-[0-9]{2})?$',
                 message='Неверный формат номера'
             ),
         ]
@@ -108,6 +112,8 @@ class DeviceAdmin(ModelAdmin):
     filter_horizontal = ('part_of', 'theme')
     change_list_template = 'admin/deviceapp/device/change_list.html'
     actions = ('action_assign_theme',)
+    list_per_page = 50
+    ordering = ('type', 'decimal_num')
 
     @display(description='Темы')
     def get_themes(self, obj):
@@ -168,16 +174,12 @@ class DeviceAdmin(ModelAdmin):
                 prepared_string = re.sub(
                     pattern=' {2,}',
                     repl=' ',
-                    string=form.cleaned_data['input']
+                    string=form.cleaned_data['input'],
                 )
-                pattern = re.compile(
-                    r'^([а-яА-я-\s]*)\s?'
-                    r'([А-Я]{2}\d{3}[-\\d\w]*(?:-\d{1,2})?)?\s?'
-                    r'([А-Я]{4}).([0-9]{6}.[0-9]{3}(?:-[0-9]{2})?)$'
-                )
+                pattern = DeviceAdminDeviceParseForm.parse_regex
                 parsed_data = re.findall(pattern, prepared_string)
                 device_type, device_index, org_code, decimal_number = \
-                    parsed_data[0]
+                    map(str.strip, parsed_data[0])
 
                 form = DeviceAdminDeviceParsedDataForm(
                     {
