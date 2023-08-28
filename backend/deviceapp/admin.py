@@ -11,17 +11,72 @@ from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 
 from django.urls import path, reverse
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 
-from .models import Device, OrgCode, DecimalNumber, Theme, DeviceType
+from deviceapp.models import Device, OrgCode, DecimalNumber, Theme, DeviceType
 
 admin.site.register(OrgCode)
 admin.site.register(Theme)
 admin.site.register(DeviceType)
 
 
+class DeviceTypeForm(forms.ModelForm):
+    class Meta:
+        model = DeviceType
+        fields = ['name']
+
+    def clean(self):
+        cleaned_data = super().clean()
+        name = cleaned_data.get('name')
+
+        if name:
+            try:
+                existing_object = DeviceType.objects.get(name=name)
+                self.instance = existing_object
+            except DeviceType.DoesNotExist:
+                pass
+
+        return cleaned_data
+
+
+class DeviceForm(forms.ModelForm):
+    class Meta:
+        model = Device
+        fields = ['index']
+
+
+class DecimalNumForm(forms.ModelForm):
+    class Meta:
+        model = DecimalNumber
+        fields = ['number']
+
+
+class OrgCodeForm(forms.ModelForm):
+    class Meta:
+        model = OrgCode
+        fields = ['code']
+
+    def clean(self):
+        cleaned_data = super().clean()
+        code = cleaned_data.get('code')
+
+        if code:
+            try:
+                existing_object = OrgCode.objects.get(code=code)
+                self.instance = existing_object
+            except OrgCode.DoesNotExist:
+                pass
+
+        return cleaned_data
+
+
 class DeviceAdminDeviceParseForm(forms.Form):
     template_name = 'parse_form_snippet.html'
+    parse_regex = re.compile(
+        r'^([а-яА-я-\s]*[а-яА-я])\s*'
+        r'((?:[А-Я]{2}\d{3}|[А-Я]-\d{3})(?:-\d{1,2})?)?\s?'
+        r'([А-Я]{4}).([0-9]{6}.[0-9]{3}(?:-[0-9]{2})?)$'
+    )
 
     input = forms.CharField(
         label='Полное наименование изделия',
@@ -29,9 +84,7 @@ class DeviceAdminDeviceParseForm(forms.Form):
         help_text='Формат: Наименование изделия АБВГ.123456.789',
         validators=[
             RegexValidator(
-                regex=r'^([а-яА-я-\s]*[а-яА-я])\s*'
-                      r'((?:[А-Я]{2}\d{3}|[А-Я]-\d{3})(?:-\d{1,2})?)?\s?'
-                      r'([А-Я]{4}).([0-9]{6}.[0-9]{3}(?:-[0-9]{2})?)$',
+                regex=parse_regex,
                 message='Неверный формат строки',
                 code='invalid_code',
             ),
@@ -54,6 +107,7 @@ class DeviceAdminDeviceParsedDataForm(forms.Form):
         label='Код организации-разработчика',
         max_length=4,
         help_text='Формат: АБВГ',
+        required=True,
         validators=[
             RegexValidator(
                 regex='^[а-яА-Я]{4}$',
@@ -68,7 +122,7 @@ class DeviceAdminDeviceParsedDataForm(forms.Form):
         help_text='Формат: 123456.789 или 123456.789-01',
         validators=[
             RegexValidator(
-                regex='^[0-9]{6}.[0-9]{3}(-[0-9]{2})?$',
+                regex=r'^[0-9]{6}\.[0-9]{3}(-[0-9]{2})?$',
                 message='Неверный формат номера'
             ),
         ]
@@ -108,6 +162,8 @@ class DeviceAdmin(ModelAdmin):
     filter_horizontal = ('part_of', 'theme')
     change_list_template = 'admin/deviceapp/device/change_list.html'
     actions = ('action_assign_theme',)
+    list_per_page = 50
+    ordering = ('type', 'decimal_num')
 
     @display(description='Темы')
     def get_themes(self, obj):
@@ -168,77 +224,116 @@ class DeviceAdmin(ModelAdmin):
                 prepared_string = re.sub(
                     pattern=' {2,}',
                     repl=' ',
-                    string=form.cleaned_data['input']
+                    string=form.cleaned_data['input'],
                 )
-                pattern = re.compile(
-                    r'^([а-яА-я-\s]*[а-яА-я])\s*'
-                    r'((?:[А-Я]{2}\d{3}|[А-Я]-\d{3})(?:-\d{1,2})?)?\s?'
-                    r'([А-Я]{4}).([0-9]{6}.[0-9]{3}(?:-[0-9]{2})?)$'
-                )
+                pattern = DeviceAdminDeviceParseForm.parse_regex
                 parsed_data = re.findall(pattern, prepared_string)
                 device_type, device_index, org_code, decimal_number = \
-                    parsed_data[0]
+                    map(str.strip, parsed_data[0])
 
-                form = DeviceAdminDeviceParsedDataForm(
-                    {
-                        'device_type': device_type,
-                        'device_index': device_index,
-                        'org_code': org_code,
-                        'decimal_num': decimal_number,
-                    }
+                form_device_type = DeviceTypeForm(
+                    initial={'name': device_type}
                 )
-                return render(request,
-                              'admin/deviceapp/device/device_parsed_data.html',
-                              {'form': form})
-        else:
-            form = DeviceAdminDeviceParseForm
 
-        return render(request,
-                      'admin/deviceapp/device/device_parse.html',
-                      {'form': form})
+                form_device = DeviceForm(
+                    initial={'index': device_index}
+                )
+
+                form_org_code = OrgCodeForm(
+                    initial={'code': org_code}
+                )
+
+                form_decimal_num = DecimalNumForm(
+                    initial={'number': decimal_number}
+                )
+
+                context = {
+                    'form_device_type': form_device_type,
+                    'form_device': form_device,
+                    'form_org_code': form_org_code,
+                    'form_decimal_num': form_decimal_num,
+                }
+
+                return render(
+                    request,
+                    'admin/deviceapp/device/device_parsed_data.html',
+                    context,
+                )
+        else:
+            context = {
+                'form': DeviceAdminDeviceParseForm()
+            }
+
+        return render(
+            request,
+            'admin/deviceapp/device/device_parse.html',
+            context,
+        )
 
     def save_parsed_data(self, request):
         if request.method == 'POST':
-            form = DeviceAdminDeviceParsedDataForm(request.POST)
-            if form.is_valid():
-                data = form.cleaned_data
+
+            form_device_type = DeviceTypeForm(request.POST)
+            form_device = DeviceForm(request.POST)
+            form_org_code = OrgCodeForm(request.POST)
+            form_decimal_num = DecimalNumForm(request.POST)
+
+            if form_device_type.is_valid() \
+                    and form_device.is_valid() \
+                    and form_org_code.is_valid() \
+                    and form_decimal_num.is_valid():
+
+                device_type = form_device_type.cleaned_data['name']
+                device = form_device.cleaned_data['index']
+                org_code = form_org_code.cleaned_data['code']
+                decimal_num = form_decimal_num.cleaned_data['number']
+
                 try:
                     with transaction.atomic():
-                        device_type, _ = DeviceType.objects.get_or_create(
-                            name=data['device_type'])
-                        org_code, _ = OrgCode.objects.get_or_create(
-                            code=data['org_code'])
-                        decimal_number, is_new_obj = DecimalNumber.objects \
-                            .get_or_create(org_code=org_code,
-                                           number=data['decimal_num'],
-                                           defaults={'is_used': True})
-                        if not is_new_obj and not decimal_number.is_used:
-                            decimal_number.is_used = True
-                            decimal_number.save()
+                        device_type_obj, _ = DeviceType \
+                            .objects.get_or_create(name=device_type)
+
+                        org_code_obj, _ = OrgCode \
+                            .objects.get_or_create(code=org_code)
+
+                        decimal_number_obj, created = DecimalNumber \
+                            .objects.get_or_create(org_code=org_code_obj,
+                                                   number=decimal_num,
+                                                   defaults={'is_used': True})
+
+                        if not created and not decimal_number_obj.is_used:
+                            decimal_number_obj.is_used = True
+                            decimal_number_obj.save()
                         Device.objects.create(
-                            type=device_type,
-                            index=data['device_index'],
-                            decimal_num=decimal_number,
+                            type=device_type_obj,
+                            index=device,
+                            decimal_num=decimal_number_obj,
                         )
 
                 except (IntegrityError, ValueError) as e:
-                    form.add_error(None, 'Ошибка при сохранении')
+                    form_device.add_error(None, 'Ошибка при сохранении')
                     model_attr = e.args[0].split('.')[1].replace('_id', '')
                     if model_attr == 'index':
                         field = 'device_index'
                     else:
                         field = model_attr
                     error = 'Уже существует'
-                    form.add_error(field, error)
+                    form_device.add_error(field, error)
+
+                    context = {
+                        'form_device_type': form_device_type,
+                        'form_device': form_device,
+                        'form_org_code': form_org_code,
+                        'form_decimal_num': form_decimal_num,
+                    }
 
                     return render(
                         request,
                         'admin/deviceapp/device/device_parsed_data.html',
-                        {'form': form},
+                        context,
                     )
                 else:
                     context = {
-                        'form': form,
                         'redirect_url': reverse(
                             'admin:deviceapp_device_changelist'
                         ),
@@ -248,14 +343,20 @@ class DeviceAdmin(ModelAdmin):
                         'admin/deviceapp/device/device_parsed_data.html',
                         context,
                     )
-        else:
-            form = DeviceAdminDeviceParsedDataForm
+            else:
+                context = {
+                    'form_device_type': form_device_type,
+                    'form_device': form_device,
+                    'form_org_code': form_org_code,
+                    'form_decimal_num': form_decimal_num,
+                }
+                return render(
+                    request,
+                    'admin/deviceapp/device/device_parsed_data.html',
+                    context,
+                )
 
-        return render(
-            request,
-            'admin/deviceapp/device/device_parsed_data.html',
-            {'form': form},
-        )
+        return redirect('admin:deviceapp_device_changelist')
 
     def delete_queryset(self, request, queryset):
         for each in queryset:

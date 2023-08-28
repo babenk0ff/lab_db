@@ -16,9 +16,9 @@ from dotenv import load_dotenv
 
 ENV = os.getenv('ENV', None)
 
-ENV_FILE = '../.env'
+ENV_FILE = '.env'
 
-if ENV == 'local' or os.path.exists(ENV_FILE):
+if ENV == 'dev-local' or os.path.exists(ENV_FILE):
     load_dotenv(ENV_FILE)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -31,10 +31,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('DJANGO_SECRET')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True if os.getenv('DEBUG') == 'True' else False
+DEBUG = True if os.getenv('DEBUG') == 'True' and ENV != 'prod' else False
 
-ALLOWED_HOSTS = ['*'] if DEBUG else os.getenv('DJANGO_ALLOWED_HOSTS').split(
-    ',')
+ALLOWED_HOSTS = ['*'] if DEBUG else \
+    os.getenv('DJANGO_ALLOWED_HOSTS').split(',')
 
 CSRF_TRUST_ORIGINS = [
     '127.0.0.1',
@@ -52,7 +52,6 @@ INSTALLED_APPS = [
 
     # other
     'rest_framework',
-    'djecrety',
 
     # my
     'deviceapp',
@@ -92,14 +91,14 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
-if ENV == 'local':
+if ENV == 'dev-local':
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
-else:
+else:  # prod, dev
     DATABASES = {
         'default': {
             'ENGINE': os.environ.get('SQL_ENGINE'),

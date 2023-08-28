@@ -6,7 +6,10 @@
         <form id="form-parse-save" method="post">
             {% csrf_token %}
             <table class="parse-form">
-                {{ form }}
+                {{ form_device_type }}
+                {{ form_device }}
+                {{ form_org_code }}
+                {{ form_decimal_num }}
             </table>
             <div class="parse-submit_wrapper">
                 <input id="parse-reset"
@@ -23,4 +26,3 @@
         {{ redirect_url|json_script:'redirect_url' }}
     {% endif %}
 </div>
-

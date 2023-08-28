@@ -3,9 +3,11 @@ from django.core.validators import RegexValidator
 
 
 class Theme(models.Model):
-    name = models.CharField(max_length=128,
-                            unique=True,
-                            verbose_name='Название темы')
+    name = models.CharField(
+        max_length=128,
+        unique=True,
+        verbose_name='Название темы',
+    )
 
     def __str__(self):
         return self.name
@@ -37,9 +39,12 @@ class OrgCode(models.Model):
 
 
 class DecimalNumber(models.Model):
-    org_code = models.ForeignKey(OrgCode,
-                                 on_delete=models.PROTECT,
-                                 verbose_name='Код организации-разработчика')
+    org_code = models.ForeignKey(
+        OrgCode,
+        on_delete=models.PROTECT,
+        verbose_name='Код организации-разработчика',
+    )
+
     number = models.CharField(
         unique=True,
         max_length=13,
@@ -47,12 +52,16 @@ class DecimalNumber(models.Model):
         help_text='Формат: 123456.789 или 123456.789-01',
         validators=[
             RegexValidator(
-                regex='^[0-9]{6}.[0-9]{3}(-[0-9]{2})?$',
-                message='Неверный формат номера'
+                regex=r'^[0-9]{6}\.[0-9]{3}(-[0-9]{2})?$',
+                message='Неверный формат номера',
             )
         ]
     )
-    is_used = models.BooleanField(default=False, verbose_name='Присвоен')
+
+    is_used = models.BooleanField(
+        default=False,
+        verbose_name='Присвоен',
+    )
 
     def __str__(self):
         return f'{self.org_code}.{self.number}'
@@ -63,12 +72,14 @@ class DecimalNumber(models.Model):
 
 
 class DeviceType(models.Model):
-    name = models.CharField(max_length=64,
-                            unique=True,
-                            null=True,
-                            blank=True,
-                            verbose_name='Наименование типа изделия',
-                            help_text='Аппарат, Блок, Комплекс, Ячейка и т.п.')
+    name = models.CharField(
+        max_length=64,
+        unique=True,
+        null=True,
+        blank=True,
+        verbose_name='Наименование типа изделия',
+        help_text='Аппарат, Блок, Комплекс, Ячейка и т.п.',
+    )
 
     def __str__(self):
         return self.name
@@ -81,31 +92,52 @@ class DeviceType(models.Model):
 class Device(models.Model):
     def __init__(self, *args, **kwargs):
         super(Device, self).__init__(*args, **kwargs)
-        self.__current_decimal_num_id = self.decimal_num.id if \
-            self.decimal_num else None
+        self.__current_decimal_num_id = self.decimal_num.id \
+            if self.decimal_num \
+            else None
 
-    type = models.ForeignKey(DeviceType,
-                             on_delete=models.PROTECT,
-                             verbose_name='Тип изделия')
-    index = models.CharField(max_length=64,
-                             # unique=True,
-                             blank=True,
-                             null=True,
-                             verbose_name='Индекс изделия')
-    decimal_num = models.OneToOneField(DecimalNumber,
-                                       blank=True,
-                                       null=True,
-                                       on_delete=models.SET_NULL,
-                                       verbose_name='Децимальный номер')
-    part_of = models.ManyToManyField('self',
-                                     symmetrical=False,
-                                     blank=True,
-                                     verbose_name='В какое изделие входит')
-    theme = models.ManyToManyField(Theme, blank=True, verbose_name='Тема')
+    type = models.ForeignKey(
+        DeviceType,
+        on_delete=models.PROTECT,
+        verbose_name='Тип изделия',
+    )
+
+    index = models.CharField(
+        max_length=64,
+        unique=True,
+        blank=True,
+        null=True,
+        verbose_name='Индекс изделия',
+    )
+
+    decimal_num = models.OneToOneField(
+        DecimalNumber,
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
+        verbose_name='Децимальный номер',
+    )
+
+    part_of = models.ManyToManyField(
+        'self',
+        symmetrical=False,
+        blank=True,
+        verbose_name='В какое изделие входит',
+    )
+
+    theme = models.ManyToManyField(
+        Theme,
+        blank=True,
+        verbose_name='Тема',
+    )
 
     def __str__(self):
         string = f'{self.type} {self.index}' if self.index else str(self.type)
         return string + f' {self.decimal_num}' if self.decimal_num else string
+
+    class Meta:
+        verbose_name = 'Изделие'
+        verbose_name_plural = 'Изделия'
 
     def __make_unused(self):
         orig_num_obj = DecimalNumber.objects.get(
@@ -159,7 +191,3 @@ class Device(models.Model):
             current_decimal_num.is_used = False
             current_decimal_num.save()
             super(Device, self).delete(using, keep_parents)
-
-    class Meta:
-        verbose_name = 'Изделие'
-        verbose_name_plural = 'Изделия'
