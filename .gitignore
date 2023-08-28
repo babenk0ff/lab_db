@@ -5,6 +5,8 @@ venv
 .env.docker.db
 .env.docker.dev
 .env.prod
+.env.full
+.env.full.db
 backend/.env
 db.sqlite3
 .idea
@@ -12,3 +14,4 @@ backend/debug.log
 backend/var/log
 backend/staticfiles
 backend/.coverage
+backend/.pytest_cache

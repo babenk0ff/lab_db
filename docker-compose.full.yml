@@ -1,4 +1,3 @@
----
 version: "3.8"
 
 services:
@@ -6,7 +5,7 @@ services:
   backend:
     build:
         context: ./backend
-        dockerfile: Dockerfile.prod
+        dockerfile: Dockerfile
     logging:
         driver: "json-file"
         options:
@@ -18,7 +17,7 @@ services:
     expose:
       - 8000
     env_file:
-      - ./.env.docker
+      - ./.env.full
     restart: unless-stopped
     depends_on:
       db:
@@ -34,7 +33,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     env_file:
-      - ./.env.docker.db
+      - ./.env.full.db
     restart: unless-stopped
     healthcheck:
       test: pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
